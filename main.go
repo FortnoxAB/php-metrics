@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"flag"
 	"net"
 	"net/http"
@@ -33,7 +34,10 @@ func main() {
 	srv.Handler = http.DefaultServeMux
 	srv.Addr = ":" + httpPort
 	go func() {
-		logrus.Error(srv.ListenAndServe())
+		err := srv.ListenAndServe()
+		if err != nil && !errors.Is(err, http.ErrServerClosed) {
+			logrus.Error(err)
+		}
 	}()
 	http.Handle("/metrics", promhttp.Handler())
 	var wg sync.WaitGroup
@@ -52,8 +56,7 @@ func main() {
 
 	<-shutdown
 	ln.Close()
-	logrus.Info("shutdown asfd")
-
+	logrus.Info("shutdown initiated")
 	wg.Wait()
 }
 
